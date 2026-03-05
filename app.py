@@ -10,10 +10,10 @@ from live_feed_reader import LiveMarketFeed
 app = Flask(__name__)
 
 # Load the trained model and teams
-model = joblib.load('nba_predictor_model.pkl')
-teams = joblib.load('teams.pkl')
-team_features = joblib.load('team_features.pkl')
-feature_cols = joblib.load('feature_cols.pkl')
+model = joblib.load('models/nba_predictor_model.pkl')
+teams = joblib.load('models/teams.pkl')
+team_features = joblib.load('models/team_features.pkl')
+feature_cols = joblib.load('models/feature_cols.pkl')
 
 # Initialize live market feed reader
 live_feed = LiveMarketFeed()
