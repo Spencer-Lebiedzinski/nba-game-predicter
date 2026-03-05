@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upcoming Games</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            animation: fadeIn 1s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            color: rgba(255,255,255,0.8);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .nav {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .nav a {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .nav a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .games-list {
+            display: grid;
+            gap: 20px;
+        }
+        .game-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+            animation: slideUp 0.6s ease-out;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 1.2fr 1fr;
+            align-items: center;
+            gap: 25px;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .game-card:hover {
+            box-shadow: 0 20px 45px rgba(0,0,0,0.35);
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+        .team {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .team-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: contain;
+            background: #f0f0f0;
+            padding: 5px;
+        }
+        .team-info {
+            flex: 1;
+        }
+        .team-name {
+            font-weight: 700;
+            color: #333;
+            font-size: 1.1em;
+            margin-bottom: 4px;
+        }
+        .vs {
+            text-align: center;
+            color: #999;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .prediction-box {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .prediction-label {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .prediction-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+        .prob-visual {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .prob-item {
+            font-size: 0.85em;
+        }
+        .prob-bar {
+            height: 24px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+        .prob-fill {
+            height: 100%;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .market-data {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        .market-label {
+            font-size: 0.8em;
+            color: #999;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .market-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        .market-item {
+            padding: 8px;
+            background: white;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+        .market-item-label {
+            color: #999;
+            font-size: 0.75em;
+            margin-bottom: 4px;
+        }
+        .market-item-value {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.1em;
+        }
+        .comparison {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.85em;
+            color: #666;
+        }
+        .arrow {
+            color: #667eea;
+            font-weight: bold;
+        }
+        .edge-positive {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .edge-negative {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .no-games {
+            text-align: center;
+            color: white;
+            font-size: 1.3em;
+            padding: 60px 20px;
+            background: rgba(0,0,0,0.15);
+            border-radius: 15px;
+            margin-top: 40px;
+        }
+        .game-time {
+            font-size: 0.85em;
+            color: #999;
+            text-align: center;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        @media (max-width: 1024px) {
+            .game-card {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .prediction-box {
+                grid-column: 1;
+            }
+        }
+        .confidence-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-top: 8px;
+        }
+        .loading-data {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏀 NBA Games Dashboard</h1>
+        <p class="subtitle">AI-Powered Predictions vs Market Odds</p>
+        <div class="nav">
+            <a href="/">← Back to Predictor</a>
+        </div>
+        
+        {% if games %}
+        <div class="games-list">
+            {% for game in games %}
+            <div class="game-card">
+                <!-- Away Team -->
+                <div class="team">
+                    <img src="{{ game.away_logo }}" alt="{{ game.away_name }}" class="team-logo">
+                    <div class="team-info">
+                        <div class="team-name">{{ game.away_name }}</div>
+                        <div class="game-time">Away</div>
+                    </div>
+                </div>
+                
+                <!-- VS -->
+                <div class="vs">VS</div>
+                
+                <!-- Home Team -->
+                <div class="team">
+                    <img src="{{ game.home_logo }}" alt="{{ game.home_name }}" class="team-logo">
+                    <div class="team-info">
+                        <div class="team-name">{{ game.home_name }}</div>
+                        <div class="game-time">Home</div>
+                    </div>
+                </div>
+                
+                <!-- Prediction & Market Data -->
+                <div style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <!-- Our Prediction -->
+                    <div class="prediction-box">
+                        <div class="prediction-label">🤖 Our Prediction</div>
+                        <div class="prediction-value">
+                            {% if game.prob_home > game.prob_away %}
+                                {{ game.home_name.split()[0] }}
+                            {% else %}
+                                {{ game.away_name.split()[0] }}
+                            {% endif %}
+                        </div>
+                        <div class="prob-visual">
+                            <div class="prob-item">
+                                <div class="prob-bar">
+                                    <div class="prob-fill" style="width: {{ game.prob_home }}%;">{{ game.prob_home }}%</div>
+                                </div>
+                                <small>{{ game.home_name.split()[0] }}</small>
+                            </div>
+                            <div class="prob-item">
+                                <div class="prob-bar">
+                                    <div class="prob-fill" style="width: {{ game.prob_away }}%;">{{ game.prob_away }}%</div>
+                                </div>
+                                <small>{{ game.away_name.split()[0] }}</small>
+                            </div>
+                        </div>
+                        <div class="confidence-badge">
+                            Confidence: {% if (game.prob_home - game.prob_away)|abs > 10 %}High{% elif (game.prob_home - game.prob_away)|abs > 5 %}Medium{% else %}Low{% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Market Data -->
+                    {% if game.market_data and (game.market_data.polymarket or game.market_data.kalshi) %}
+                    <div class="market-data">
+                        <div class="market-label">📊 Market Odds</div>
+                        {% if game.market_data.polymarket %}
+                            {% set poly = game.market_data.polymarket %}
+                            {% if poly.home and poly.away %}
+                            <div class="market-content">
+                                <div class="market-item">
+                                    <div class="market-item-label">Polymarket</div>
+                                    <div class="market-item-value">{{ (poly.home.midpoint_pct * 100)|round(1) }}%</div>
+                                    <small>{{ game.home_name.split()[0] }}</small>
+                                </div>
+                                <div class="market-item">
+                                    <div class="market-item-label">Polymarket</div>
+                                    <div class="market-item-value">{{ (poly.away.midpoint_pct * 100)|round(1) }}%</div>
+                                    <small>{{ game.away_name.split()[0] }}</small>
+                                </div>
+                            </div>
+                            <div class="comparison" style="grid-column: 1 / -1; margin-top: 8px;">
+                                <span>Your Edge vs Market:</span>
+                                {% set home_edge = game.prob_home - (poly.home.midpoint_pct * 100 if poly.home else 50) %}
+                                <span class="{% if home_edge > 0 %}edge-positive{% else %}edge-negative{% endif %}">
+                                    {{ home_edge|round(1) }}%
+                                </span>
+                            </div>
+                            {% endif %}
+                        {% elif game.market_data.kalshi %}
+                            {% set kalshi = game.market_data.kalshi %}
+                            <div class="market-content">
+                                <div class="market-item">
+                                    <div class="market-item-label">Kalshi</div>
+                                    <div class="market-item-value">{{ (kalshi.midpoint_pct * 100)|round(1) }}%</div>
+                                    <small>Home</small>
+                                </div>
+                                <div class="market-item">
+                                    <div class="market-item-label">Kalshi</div>
+                                    <div class="market-item-value">{{ (100 - kalshi.midpoint_pct * 100)|round(1) }}%</div>
+                                    <small>Away</small>
+                                </div>
+                            </div>
+                            <div class="comparison" style="grid-column: 1 / -1; margin-top: 8px;">
+                                <span>Market: {{ (kalshi.midpoint_pct * 100)|round(1) }}% home</span>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                        <div class="loading-data">📡 Market data loading...</div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="market-data">
+                        <div class="market-label">📊 Market Odds</div>
+                        <div class="loading-data">
+                            ⏳ Discovering markets...<br/>
+                            <small>Live market integration coming soon</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-games">
+            No upcoming games found. Check back later! 🎮
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
