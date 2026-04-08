@@ -91,21 +91,35 @@ def get_upcoming_games():
     except:
         return []
 
-def predict_game(home_team, away_team):
-    """Predict a game outcome with probability"""
-    features = []
+def predict_game(home_team, away_team, game_date=None):
+    """Predict a game outcome with probability.
+
+    game_date (str or datetime, optional): when provided, B2B and DAYS_REST
+    are computed dynamically from each team's LAST_GAME_DATE so upcoming-game
+    predictions reflect actual schedule fatigue.
+    """
+    home_f = dict(team_features.get(home_team, {}))
+    away_f = dict(team_features.get(away_team, {}))
+
+    # Dynamically compute B2B / rest days when game date is known
+    if game_date:
+        game_dt = pd.to_datetime(game_date).normalize()
+        for f_dict in [home_f, away_f]:
+            last = f_dict.get("LAST_GAME_DATE", "")
+            if last:
+                days = (game_dt - pd.to_datetime(last)).days
+                f_dict["DAYS_REST"] = min(max(days, 0), 14)
+                f_dict["B2B"] = 1 if days <= 1 else 0
+
+    row = {}
     for feature in feature_cols:
         if feature.startswith("HOME_"):
-            feature_name = feature[5:]
-            features.append(team_features.get(home_team, {}).get(feature_name, 0))
+            row[feature] = home_f.get(feature[5:], 0) or 0
         else:
-            feature_name = feature[5:]
-            features.append(team_features.get(away_team, {}).get(feature_name, 0))
-    
-    features_df = pd.DataFrame([features], columns=feature_cols)
-    prob_home_win = model.predict_proba(features_df)[0][1]
-    
-    return prob_home_win
+            row[feature] = away_f.get(feature[5:], 0) or 0
+
+    features_df = pd.DataFrame([row], columns=feature_cols)
+    return model.predict_proba(features_df)[0][1]
 
 @app.route('/')
 def index():
@@ -119,7 +133,7 @@ def upcoming():
     for game in games:
         home = game['home']
         away = game['away']
-        prob_home = predict_game(home, away)
+        prob_home = predict_game(home, away, game_date=game.get('date'))
         prob_away = 1 - prob_home
         
         game_key = f"{away.upper()}_{home.upper()}"
