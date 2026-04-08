@@ -435,5 +435,19 @@ for tid, abbrev in team_id_to_abbrev.items():
     team_features_out[abbrev] = d
 
 joblib.dump(team_features_out, "team_features.pkl")
-print("Saved: nba_predictor_model.pkl, feature_cols.pkl, teams.pkl, team_features.pkl")
+
+# team_recent.pkl: last 5 game results per team for form display in the UI
+team_recent_out = {}
+for tid, grp in tg.sort_values("GAME_DATE").groupby("TEAM_ID"):
+    abbrev = team_id_to_abbrev.get(tid)
+    if abbrev:
+        team_recent_out[abbrev] = [
+            {"result": "W" if row["WIN"] == 1 else "L",
+             "pts": int(row["PTS"]),
+             "opp_pts": int(row["OPP_PTS"])}
+            for _, row in grp.tail(5).iterrows()
+        ]
+joblib.dump(team_recent_out, "team_recent.pkl")
+
+print("Saved: nba_predictor_model.pkl, feature_cols.pkl, teams.pkl, team_features.pkl, team_recent.pkl")
 print("\nDone!")
