@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBA Predictions Dashboard</title>
+  <style>
+    :root {
+      --bg:          #0b0e18;
+      --surface:     #13161f;
+      --surface-2:   #1c1f2e;
+      --border:      #252840;
+      --text:        #e2e5f0;
+      --muted:       #6b6e88;
+      --green:       #22c55e;
+      --green-dim:   rgba(34, 197, 94, 0.12);
+      --amber:       #f59e0b;
+      --amber-dim:   rgba(245, 158, 11, 0.12);
+      --blue:        #3b82f6;
+      --blue-dim:    rgba(59, 130, 246, 0.12);
+      --red:         #ef4444;
+      --red-dim:     rgba(239, 68, 68, 0.10);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-logo { font-size: 1.5rem; }
+    .header-title { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.3px; }
+    .header-subtitle { font-size: 0.75rem; color: var(--muted); }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .refresh-info { font-size: 0.75rem; color: var(--muted); text-align: right; }
+    .refresh-countdown { color: var(--blue); font-weight: 600; }
+    .nav-link {
+      padding: 6px 14px;
+      background: var(--surface-2);
+      color: var(--text);
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s;
+    }
+    .nav-link:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* ── Filters & stats bar ── */
+    .toolbar {
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .filter-tabs { display: flex; gap: 6px; }
+    .tab {
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+    .tab.active, .tab:hover { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .summary-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .pill.highlight { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+    .pill.info      { background: var(--blue-dim);  border-color: var(--blue);  color: var(--blue);  }
+
+    /* ── Game list ── */
+    .games-list {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── Game card ── */
+    .game-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .game-card:hover { border-color: #353860; }
+
+    /* Bet banner */
+    .bet-banner {
+      padding: 9px 18px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      letter-spacing: 0.3px;
+    }
+    .bet-banner.green { background: var(--green-dim); color: var(--green); border-bottom: 1px solid rgba(34,197,94,0.2); }
+    .bet-banner.amber { background: var(--amber-dim); color: var(--amber); border-bottom: 1px solid rgba(245,158,11,0.2); }
+    .bet-banner.blue  { background: var(--blue-dim);  color: var(--blue);  border-bottom: 1px solid rgba(59,130,246,0.2);  }
+    .bet-banner-left  { display: flex; align-items: center; gap: 8px; }
+    .units-badge {
+      background: rgba(255,255,255,0.12);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+
+    /* Card body */
+    .card-body { padding: 18px; }
+
+    /* Teams row */
+    .teams-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .team-block { display: flex; align-items: center; gap: 12px; }
+    .team-block.right { flex-direction: row-reverse; text-align: right; }
+    .team-logo {
+      width: 48px; height: 48px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+    }
+    .team-name { font-weight: 700; font-size: 1rem; line-height: 1.2; }
+    .team-label { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .game-time-center { text-align: center; }
+    .at-symbol { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+    .game-time { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+
+    /* Probability section */
+    .prob-section { margin-bottom: 14px; }
+    .prob-row {
+      display: grid;
+      grid-template-columns: 60px 1fr 60px;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .prob-label { font-size: 0.7rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .prob-label.right { text-align: right; }
+    .split-bar {
+      height: 28px;
+      background: var(--surface-2);
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      position: relative;
+    }
+    .split-left {
+      background: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #fff;
+      transition: width 0.6s ease;
+      min-width: 40px;
+    }
+    .split-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding-left: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.5);
+    }
+    .split-bar.market .split-left { background: #6366f1; }
+
+    /* Edge row */
+    .edge-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      font-size: 0.8rem;
+    }
+    .edge-label { color: var(--muted); font-weight: 600; }
+    .edge-value { font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+    .edge-value.green { color: var(--green); background: var(--green-dim); }
+    .edge-value.amber { color: var(--amber); background: var(--amber-dim); }
+    .edge-value.blue  { color: var(--blue);  background: var(--blue-dim);  }
+    .edge-value.red   { color: var(--red);   background: var(--red-dim);   }
+    .edge-value.gray  { color: var(--muted); }
+    .mkt-odds { color: var(--muted); font-size: 0.78rem; }
+    .no-market { color: var(--muted); font-size: 0.78rem; font-style: italic; }
+
+    /* Divider */
+    .card-divider { border: none; border-top: 1px solid var(--border); margin: 0 0 14px; }
+
+    /* Stats rows */
+    .stats-rows { display: flex; flex-direction: column; gap: 6px; }
+    .stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .stat-team-logo { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
+    .stat-pills { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 1; }
+    .stat-pill {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: var(--surface-2);
+      white-space: nowrap;
+    }
+    .stat-pill.elo   { color: var(--blue);  background: var(--blue-dim);  border-color: transparent; }
+    .stat-pill.pos   { color: var(--green); background: var(--green-dim); border-color: transparent; }
+    .stat-pill.neg   { color: var(--red);   background: var(--red-dim);   border-color: transparent; }
+    .stat-pill.warn  { color: var(--amber); background: var(--amber-dim); border-color: transparent; }
+    .form-dots { display: flex; gap: 3px; align-items: center; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+    .dot.W { background: var(--green); }
+    .dot.L { background: var(--surface-2); border: 1px solid var(--muted); }
+    .stat-abbr { font-size: 0.72rem; color: var(--muted); font-weight: 700; min-width: 28px; }
+
+    /* No games state */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--muted);
+    }
+    .empty-state h2 { font-size: 1.4rem; margin-bottom: 8px; color: var(--text); }
+
+    /* Legend */
+    .legend {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px 24px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted); }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    @media (max-width: 640px) {
+      .teams-row { grid-template-columns: 1fr auto 1fr; gap: 8px; }
+      .team-logo { width: 36px; height: 36px; }
+      .team-name { font-size: 0.85rem; }
+      .games-list { padding: 0 12px 48px; }
+      .toolbar { padding: 12px; }
+      .header { padding: 12px 16px; }
+      .header-subtitle { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <span class="header-logo">🏀</span>
+    <div>
+      <div class="header-title">NBA Predictions</div>
+      <div class="header-subtitle">Updated {{ last_updated }}</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="refresh-info">
+      Refreshes in <span class="refresh-countdown" id="countdown">30</span>s
+    </div>
+    <a href="/" class="nav-link">Predictor</a>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="filter-tabs">
+    <button class="tab active" onclick="filterGames('all', this)">All Games ({{ games|length }})</button>
+    <button class="tab" onclick="filterGames('bets', this)">Best Bets ({{ best_bets }})</button>
+  </div>
+  <div class="summary-pills">
+    {% if best_bets > 0 %}
+    <span class="pill highlight">{{ best_bets }} bet{{ 's' if best_bets != 1 }} available</span>
+    {% endif %}
+    <span class="pill info">Model ~66–68% accuracy</span>
+  </div>
+</div>
+
+<!-- Games -->
+<div class="games-list" id="games-list">
+
+  {% if games %}
+    {% for game in games %}
+    <div class="game-card" data-bet="{{ game.bet.color if game.bet else 'none' }}">
+
+      <!-- Bet banner -->
+      {% if game.bet and game.bet.color in ('green', 'amber', 'blue') %}
+      <div class="bet-banner {{ game.bet.color }}">
+        <div class="bet-banner-left">
+          {% if game.bet.color == 'green' %}🔥{% elif game.bet.color == 'amber' %}📈{% else %}👀{% endif %}
+          {{ game.bet.label }}
+          {% if game.bet.units > 0 %}
+          <span class="units-badge">{{ game.bet.units }} unit{{ 's' if game.bet.units != 1 }}</span>
+          {% endif %}
+          · +{{ game.bet.edge }}% edge on {{ team_info[game.bet_team].name.split()[-1] }}
+        </div>
+        <span>{{ game.time }}</span>
+      </div>
+      {% endif %}
+
+      <div class="card-body">
+
+        <!-- Teams -->
+        <div class="teams-row">
+          <div class="team-block">
+            <img src="{{ game.away_logo }}" alt="{{ game.away_name }}" class="team-logo">
+            <div>
+              <div class="team-name">{{ game.away_name.split()[-1] }}</div>
+              <div class="team-label">{{ game.away_name.split()[:-1]|join(' ') }} · Away</div>
+            </div>
+          </div>
+          <div class="game-time-center">
+            <div class="at-symbol">@</div>
+            {% if not (game.bet and game.bet.color in ('green','amber','blue')) %}
+            <div class="game-time">{{ game.time }}</div>
+            {% endif %}
+          </div>
+          <div class="team-block right">
+            <div>
+              <div class="team-name">{{ game.home_name.split()[-1] }}</div>
+              <div class="team-label">{{ game.home_name.split()[:-1]|join(' ') }} · Home</div>
+            </div>
+            <img src="{{ game.home_logo }}" alt="{{ game.home_name }}" class="team-logo">
+          </div>
+        </div>
+
+        <!-- Probability bars -->
+        <div class="prob-section">
+
+          <!-- Model -->
+          <div class="prob-row">
+            <span class="prob-label">Model</span>
+            <div class="split-bar">
+              <div class="split-left" style="width: {{ game.prob_away }}%;">{{ game.prob_away }}%</div>
+              <div class="split-right">{{ game.prob_home }}%</div>
+            </div>
+            <span class="prob-label right"></span>
+          </div>
+
+          <!-- Market (if available) -->
+          {% if game.mkt_home and game.mkt_away %}
+          <div class="prob-row">
+            <span class="prob-label">Market</span>
+            <div class="split-bar market">
+              <div class="split-left" style="width: {{ game.mkt_away }}%;">{{ game.mkt_away }}%</div>
+              <div class="split-right">{{ game.mkt_home }}%</div>
+            </div>
+            <span class="prob-label right"></span>
+          </div>
+          {% endif %}
+
+        </div>
+
+        <!-- Edge / odds row -->
+        <div class="edge-row">
+          {% if game.bet %}
+            <span class="edge-label">Edge:</span>
+            <span class="edge-value {{ game.bet.color }}">
+              {% if game.bet.edge >= 0 %}+{% endif %}{{ game.bet.edge }}%
+            </span>
+            <span class="edge-label">on {{ team_info[game.bet_team].name.split()[-1] }}</span>
+          {% endif %}
+          {% if game.mkt_home_odds and game.mkt_away_odds %}
+            <span class="mkt-odds">· {{ game.away[:3] }} {{ game.mkt_away_odds }} / {{ game.home[:3] }} {{ game.mkt_home_odds }}</span>
+          {% elif not game.bet %}
+            <span class="no-market">No market data — model only</span>
+          {% endif %}
+        </div>
+
+        <hr class="card-divider">
+
+        <!-- Team stats -->
+        <div class="stats-rows">
+
+          <!-- Away team -->
+          <div class="stat-row">
+            <span class="stat-abbr">{{ game.away }}</span>
+            <img src="{{ game.away_logo }}" class="stat-team-logo">
+            <div class="stat-pills">
+              <span class="stat-pill elo">{{ game.away_stats.elo }} Elo</span>
+              <span class="stat-pill {{ 'pos' if game.away_stats.net_rating > 0 else 'neg' }}">
+                NR {{ '+' if game.away_stats.net_rating > 0 else '' }}{{ game.away_stats.net_rating }}
+              </span>
+              {% if game.away_stats.streak != 0 %}
+              <span class="stat-pill {{ 'pos' if game.away_stats.streak > 0 else 'neg' }}">
+                {{ game.away_stats.streak_str }}
+              </span>
+              {% endif %}
+              {% if game.away_stats.b2b %}
+              <span class="stat-pill warn">B2B</span>
+              {% else %}
+              <span class="stat-pill">{{ game.away_stats.rest }}d rest</span>
+              {% endif %}
+              {% if game.away_stats.form %}
+              <div class="form-dots">
+                {% for r in game.away_stats.form %}
+                <div class="dot {{ r }}" title="{{ r }}"></div>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Home team -->
+          <div class="stat-row">
+            <span class="stat-abbr">{{ game.home }}</span>
+            <img src="{{ game.home_logo }}" class="stat-team-logo">
+            <div class="stat-pills">
+              <span class="stat-pill elo">{{ game.home_stats.elo }} Elo</span>
+              <span class="stat-pill {{ 'pos' if game.home_stats.net_rating > 0 else 'neg' }}">
+                NR {{ '+' if game.home_stats.net_rating > 0 else '' }}{{ game.home_stats.net_rating }}
+              </span>
+              {% if game.home_stats.streak != 0 %}
+              <span class="stat-pill {{ 'pos' if game.home_stats.streak > 0 else 'neg' }}">
+                {{ game.home_stats.streak_str }}
+              </span>
+              {% endif %}
+              {% if game.home_stats.b2b %}
+              <span class="stat-pill warn">B2B</span>
+              {% else %}
+              <span class="stat-pill">{{ game.home_stats.rest }}d rest</span>
+              {% endif %}
+              {% if game.home_stats.form %}
+              <div class="form-dots">
+                {% for r in game.home_stats.form %}
+                <div class="dot {{ r }}" title="{{ r }}"></div>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+      </div><!-- card-body -->
+    </div><!-- game-card -->
+    {% endfor %}
+
+  {% else %}
+  <div class="empty-state">
+    <h2>No games scheduled today</h2>
+    <p>Check back later or use the <a href="/" style="color: var(--blue);">manual predictor</a>.</p>
+  </div>
+  {% endif %}
+
+</div><!-- games-list -->
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Win (form)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--surface-2);border:1px solid var(--muted)"></div> Loss (form)</div>
+  <div class="legend-item">NR = Net Rating L10 (pace-normalized)</div>
+  <div class="legend-item">B2B = Back-to-back game</div>
+  <div class="legend-item">Edge = Model prob − Market prob</div>
+</div>
+
+<script>
+  // ── Filter tabs ──────────────────────────────────────────────────────────
+  function filterGames(type, btn) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.game-card').forEach(card => {
+      const bet = card.dataset.bet;
+      if (type === 'bets') {
+        card.style.display = (bet === 'green' || bet === 'amber') ? '' : 'none';
+      } else {
+        card.style.display = '';
+      }
+    });
+  }
+
+  // ── Auto-refresh countdown ───────────────────────────────────────────────
+  let seconds = 30;
+  const countdownEl = document.getElementById('countdown');
+  setInterval(() => {
+    seconds--;
+    countdownEl.textContent = seconds;
+    if (seconds <= 0) location.reload();
+  }, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBA Predictor</title>
+  <style>
+    :root {
+      --bg:        #0b0e18;
+      --surface:   #13161f;
+      --surface-2: #1c1f2e;
+      --border:    #252840;
+      --text:      #e2e5f0;
+      --muted:     #6b6e88;
+      --blue:      #3b82f6;
+      --blue-dim:  rgba(59,130,246,0.12);
+      --green:     #22c55e;
+      --green-dim: rgba(34,197,94,0.12);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+    }
+
+    /* ── Two-column layout ── */
+    .page {
+      width: 100%;
+      max-width: 1000px;
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 60px;
+      align-items: center;
+    }
+
+    /* ── Hero (left) ── */
+    .hero-logo { font-size: 3rem; margin-bottom: 16px; }
+    .hero-title {
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.1;
+      margin-bottom: 14px;
+    }
+    .hero-title span { color: var(--blue); }
+    .hero-subtitle {
+      font-size: 1rem;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 32px;
+      max-width: 420px;
+    }
+    .feature-list { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 36px; }
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .feature-list li::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--blue);
+      flex-shrink: 0;
+    }
+    .feature-list li strong { color: var(--text); }
+
+    .accuracy-row { display: flex; gap: 24px; }
+    .accuracy-stat { text-align: center; }
+    .accuracy-num { font-size: 1.8rem; font-weight: 800; color: var(--green); }
+    .accuracy-label { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── Form card (right) ── */
+    .form-col { display: flex; flex-direction: column; gap: 12px; }
+
+    .dashboard-cta {
+      display: block;
+      padding: 16px 20px;
+      background: var(--blue-dim);
+      border: 1px solid var(--blue);
+      border-radius: 10px;
+      text-decoration: none;
+      color: var(--blue);
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-align: center;
+      transition: background 0.2s;
+    }
+    .dashboard-cta:hover { background: rgba(59,130,246,0.22); }
+    .cta-main { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .cta-sub { font-size: 0.78rem; color: rgba(59,130,246,0.7); }
+
+    .divider {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--muted); font-size: 0.78rem;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; border-top: 1px solid var(--border);
+    }
+
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+    }
+    .form-title {
+      font-size: 0.75rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;
+    }
+    .team-select-wrap {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px; margin-bottom: 10px;
+      transition: border-color 0.2s;
+    }
+    .team-select-wrap:focus-within { border-color: var(--blue); }
+    .select-logo { width: 30px; height: 30px; object-fit: contain; flex-shrink: 0; }
+    .select-logo.hidden { display: none; }
+    .select-placeholder {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--border); flex-shrink: 0;
+    }
+    .select-label { font-size: 0.68rem; color: var(--muted); margin-bottom: 2px; font-weight: 600; text-transform: uppercase; }
+    .select-wrapper { flex: 1; }
+    select {
+      width: 100%; background: transparent; border: none;
+      color: var(--text); font-size: 0.9rem; font-weight: 600;
+      outline: none; cursor: pointer;
+    }
+    select option { background: #1c1f2e; color: var(--text); }
+    .vs-label {
+      text-align: center; color: var(--muted); font-size: 0.75rem;
+      font-weight: 700; margin: 2px 0 10px; letter-spacing: 1px;
+    }
+    .submit-btn {
+      width: 100%; padding: 13px; background: var(--blue);
+      color: #fff; border: none; border-radius: 8px; font-size: 0.95rem;
+      font-weight: 700; cursor: pointer; margin-top: 6px; transition: opacity 0.2s;
+    }
+    .submit-btn:hover { opacity: 0.88; }
+
+    .footer-note { font-size: 0.72rem; color: var(--muted); text-align: center; }
+
+    /* ── Mobile: stack vertically ── */
+    @media (max-width: 768px) {
+      body { align-items: flex-start; padding: 32px 20px; }
+      .page { grid-template-columns: 1fr; gap: 32px; max-width: 480px; margin: 0 auto; }
+      .hero-title { font-size: 2rem; }
+      .accuracy-row { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- Hero left -->
+    <div class="hero">
+      <div class="hero-logo">🏀</div>
+      <h1 class="hero-title">NBA Game<br><span>Predictor</span></h1>
+      <p class="hero-subtitle">
+        Machine learning model trained on 10 seasons of NBA data.
+        Compares predictions against live market odds to find betting edges.
+      </p>
+
+      <ul class="feature-list">
+        <li><strong>Elo ratings</strong> — FiveThirtyEight methodology with MOV multiplier</li>
+        <li><strong>Four Factors</strong> — Dean Oliver's eFG%, TOV%, OREB%, FTR framework</li>
+        <li><strong>Net Rating</strong> — Pace-normalized offensive / defensive efficiency</li>
+        <li><strong>Schedule</strong> — Back-to-back flags, rest days, fatigue index</li>
+        <li><strong>Home/away splits</strong> — Separate rolling windows per venue type</li>
+        <li><strong>Edge analysis</strong> — Model vs Polymarket &amp; Kalshi live odds</li>
+      </ul>
+
+      <div class="accuracy-row">
+        <div class="accuracy-stat">
+          <div class="accuracy-num">~67%</div>
+          <div class="accuracy-label">Model accuracy</div>
+        </div>
+        <div class="accuracy-stat">
+          <div class="accuracy-num">10</div>
+          <div class="accuracy-label">Seasons of data</div>
+        </div>
+        <div class="accuracy-stat">
+          <div class="accuracy-num">50+</div>
+          <div class="accuracy-label">Features</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form right -->
+    <div class="form-col">
+      <a href="/upcoming" class="dashboard-cta">
+        <div class="cta-main">View Today's Games &amp; Best Bets →</div>
+        <div class="cta-sub">Live predictions with edge analysis vs market odds</div>
+      </a>
+
+      <div class="divider">or run a manual prediction</div>
+
+      <div class="form-card">
+        <div class="form-title">Manual Matchup</div>
+        <form action="/predict" method="post">
+          <div class="team-select-wrap">
+            <div class="select-placeholder" id="away-ph"></div>
+            <img id="away-logo" class="select-logo hidden" src="" alt="">
+            <div class="select-wrapper">
+              <div class="select-label">Away Team</div>
+              <select name="away_team" id="away_team" required onchange="updateLogo('away_team','away-logo','away-ph')">
+                <option value="">Select team...</option>
+                {% for abbr, info in team_info.items()|sort(attribute='1.name') %}
+                <option value="{{ abbr }}">{{ info.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="vs-label">@ HOME</div>
+
+          <div class="team-select-wrap">
+            <div class="select-placeholder" id="home-ph"></div>
+            <img id="home-logo" class="select-logo hidden" src="" alt="">
+            <div class="select-wrapper">
+              <div class="select-label">Home Team</div>
+              <select name="home_team" id="home_team" required onchange="updateLogo('home_team','home-logo','home-ph')">
+                <option value="">Select team...</option>
+                {% for abbr, info in team_info.items()|sort(attribute='1.name') %}
+                <option value="{{ abbr }}">{{ info.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="submit-btn">Predict Winner</button>
+        </form>
+      </div>
+
+      <div class="footer-note">Not financial advice. Predictions based on last 10-game rolling stats.</div>
+    </div>
+
+  </div>
+
+  <script>
+    const teamInfo = {{ team_info|tojson }};
+    function updateLogo(selectId, imgId, phId) {
+      const val = document.getElementById(selectId).value;
+      const img = document.getElementById(imgId);
+      const ph  = document.getElementById(phId);
+      if (val && teamInfo[val]) {
+        img.src = teamInfo[val].logo;
+        img.classList.remove('hidden');
+        ph.style.display = 'none';
+      } else {
+        img.classList.add('hidden');
+        ph.style.display = '';
+      }
+    }
+  </script>
+</body>
+</html>
