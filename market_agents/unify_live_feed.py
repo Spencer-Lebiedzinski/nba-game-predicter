@@ -19,6 +19,44 @@ from stream_kalshi import stream_kalshi_prices
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("unified_feed")
 
+TEAM_NAME_TO_ABBR = {
+    'ATLANTA': 'ATL', 'HAWKS': 'ATL', 'ATLANTA HAWKS': 'ATL',
+    'BOSTON': 'BOS', 'CELTICS': 'BOS', 'BOSTON CELTICS': 'BOS',
+    'BROOKLYN': 'BKN', 'NETS': 'BKN', 'BROOKLYN NETS': 'BKN',
+    'CHARLOTTE': 'CHA', 'HORNETS': 'CHA', 'CHARLOTTE HORNETS': 'CHA',
+    'CHICAGO': 'CHI', 'BULLS': 'CHI', 'CHICAGO BULLS': 'CHI',
+    'CLEVELAND': 'CLE', 'CAVALIERS': 'CLE', 'CLEVELAND CAVALIERS': 'CLE',
+    'DALLAS': 'DAL', 'MAVERICKS': 'DAL', 'DALLAS MAVERICKS': 'DAL',
+    'DENVER': 'DEN', 'NUGGETS': 'DEN', 'DENVER NUGGETS': 'DEN',
+    'DETROIT': 'DET', 'PISTONS': 'DET', 'DETROIT PISTONS': 'DET',
+    'GOLDEN STATE': 'GSW', 'WARRIORS': 'GSW', 'GOLDEN STATE WARRIORS': 'GSW',
+    'HOUSTON': 'HOU', 'ROCKETS': 'HOU', 'HOUSTON ROCKETS': 'HOU',
+    'INDIANA': 'IND', 'PACERS': 'IND', 'INDIANA PACERS': 'IND',
+    'LA': 'LAC', 'LAC': 'LAC', 'CLIPPERS': 'LAC', 'LA CLIPPERS': 'LAC', 'LOS ANGELES CLIPPERS': 'LAC',
+    'LAL': 'LAL', 'LAKERS': 'LAL', 'LOS ANGELES LAKERS': 'LAL',
+    'MEMPHIS': 'MEM', 'GRIZZLIES': 'MEM', 'MEMPHIS GRIZZLIES': 'MEM',
+    'MIAMI': 'MIA', 'HEAT': 'MIA', 'MIAMI HEAT': 'MIA',
+    'MILWAUKEE': 'MIL', 'BUCKS': 'MIL', 'MILWAUKEE BUCKS': 'MIL',
+    'MINNESOTA': 'MIN', 'TIMBERWOLVES': 'MIN', 'MINNESOTA TIMBERWOLVES': 'MIN',
+    'NEW ORLEANS': 'NOP', 'PELICANS': 'NOP', 'NEW ORLEANS PELICANS': 'NOP',
+    'NEW YORK': 'NYK', 'KNICKS': 'NYK', 'NEW YORK KNICKS': 'NYK',
+    'OKLAHOMA CITY': 'OKC', 'THUNDER': 'OKC', 'OKLAHOMA CITY THUNDER': 'OKC',
+    'ORLANDO': 'ORL', 'MAGIC': 'ORL', 'ORLANDO MAGIC': 'ORL',
+    'PHILADELPHIA': 'PHI', '76ERS': 'PHI', 'PHILADELPHIA 76ERS': 'PHI', 'SIXERS': 'PHI',
+    'PHOENIX': 'PHX', 'SUNS': 'PHX', 'PHOENIX SUNS': 'PHX',
+    'PORTLAND': 'POR', 'TRAIL BLAZERS': 'POR', 'PORTLAND TRAIL BLAZERS': 'POR',
+    'SACRAMENTO': 'SAC', 'KINGS': 'SAC', 'SACRAMENTO KINGS': 'SAC',
+    'SAN ANTONIO': 'SAS', 'SPURS': 'SAS', 'SAN ANTONIO SPURS': 'SAS',
+    'TORONTO': 'TOR', 'RAPTORS': 'TOR', 'TORONTO RAPTORS': 'TOR',
+    'UTAH': 'UTA', 'JAZZ': 'UTA', 'UTAH JAZZ': 'UTA',
+    'WASHINGTON': 'WAS', 'WIZARDS': 'WAS', 'WASHINGTON WIZARDS': 'WAS'
+}
+
+def get_team_abbr(team_name: str) -> str:
+    """Safely convert any team name/mascot to a standard abbreviation"""
+    clean_name = team_name.strip().upper()
+    return TEAM_NAME_TO_ABBR.get(clean_name, clean_name)
+
 class UnifiedFeed:
     def __init__(self, output_file: str = "data/live_probs.jsonl"):
         self.output_file = output_file
@@ -52,7 +90,9 @@ class UnifiedFeed:
         
         # Use Polymarket as primary source
         for poly_id, poly_market in self.polymarket_markets.items():
-            game_key = f"{poly_market['away_team'].upper()}_{poly_market['home_team'].upper()}"
+            poly_away_abbr = get_team_abbr(poly_market['away_team'])
+            poly_home_abbr = get_team_abbr(poly_market['home_team'])
+            game_key = f"{poly_away_abbr}_{poly_home_abbr}"
             
             self.game_mappings[game_key] = {
                 'game_key': game_key,
@@ -64,7 +104,9 @@ class UnifiedFeed:
         
         # Match Kalshi markets
         for kalshi_id, kalshi_market in self.kalshi_markets.items():
-            game_key = f"{kalshi_market['away_team'].upper()}_{kalshi_market['home_team'].upper()}"
+            kalshi_away_abbr = get_team_abbr(kalshi_market['away_team'])
+            kalshi_home_abbr = get_team_abbr(kalshi_market['home_team'])
+            game_key = f"{kalshi_away_abbr}_{kalshi_home_abbr}"
             
             if game_key in self.game_mappings:
                 self.game_mappings[game_key]['kalshi'] = kalshi_market

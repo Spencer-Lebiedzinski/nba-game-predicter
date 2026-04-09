@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+.env.*
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Next.js
+node_modules/
+.next/
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+data/live_probs.jsonl
+*.pkl
+git_status.txt
+git_diff.txt
+check_git.py
+C:\Users\spenc\OneDrive\Desktop\Personal Projects\nba-game-predicter\check_git.py
+C:\Users\spenc\OneDrive\Desktop\Personal Projects\nba-game-predicter\git_status.txt
+C:\Users\spenc\OneDrive\Desktop\Personal Projects\nba-game-predicter\git_diff.txt
+*.db
