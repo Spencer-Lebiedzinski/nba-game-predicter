@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · NBA Predictor{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="fade-up">
+        <div class="hero-eyebrow">
+          <span class="glow"></span>
+          Live · {{ last_updated }} ·
+          <span class="mono">
+            {% if backend == 'transformer' %}Transformer v3{% else %}GBM v2{% endif %}
+          </span> active
+        </div>
+        <h1 class="hero-title">
+          Sharper NBA<br>
+          <span class="grad">edge detection.</span>
+        </h1>
+        <p class="hero-sub">
+          Two production models. A Transformer over each team's recent game sequence and a gradient-boosted ensemble of Four Factors, Elo, and schedule fatigue. Cross-checked against live Polymarket and Kalshi odds to surface mispriced games.
+        </p>
+        <div class="hero-cta-row">
+          <a href="/upcoming" class="btn btn-primary btn-lg">View today's slate →</a>
+          <a href="/predict" class="btn btn-secondary btn-lg">Manual matchup</a>
+          <a href="/models" class="btn btn-ghost btn-lg">Inspect the models</a>
+        </div>
+      </div>
+
+      <!-- Hero-right: model architecture preview card -->
+      <div class="card card-violet card-pad-lg fade-up" style="animation-delay:.1s; position: relative; overflow: hidden;">
+        <div class="card-title"><span class="swatch" style="background: var(--violet);"></span> Active model</div>
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom: 14px;">
+          <div style="width:48px; height:48px; border-radius: 12px;
+                      background: linear-gradient(135deg, var(--violet), var(--accent));
+                      display:grid; place-items:center; box-shadow: var(--glow-violet);
+                      font-size: 1.4rem; font-weight: 800; color: white;">
+            {% if backend == 'transformer' %}T{% else %}G{% endif %}
+          </div>
+          <div>
+            <div class="fw-700 text-lg">
+              {% if backend == 'transformer' %}Two-Tower Transformer{% else %}Gradient Boosting{% endif %}
+            </div>
+            <div class="text-xs text-muted mono">
+              {% if backend == 'transformer' %}PyTorch · 4 layers · d_model 128 · shared weights{% else %}XGBoost · ~50 features · {{ kpis.teams_tracked }} teams{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="gap: 10px;">
+          <div style="padding: 10px 12px; background: var(--surface-2); border-radius: 8px;">
+            <div class="text-xs text-muted uppercase fw-700">Input</div>
+            <div class="text-sm mt-4 mono">
+              {% if backend == 'transformer' %}20-game sequence × 2 teams + 8 ctx feats{% else %}~50 tabular rolling features{% endif %}
+            </div>
+          </div>
+          <div style="padding: 10px 12px; background: var(--surface-2); border-radius: 8px;">
+            <div class="text-xs text-muted uppercase fw-700">Output</div>
+            <div class="text-sm mt-4 mono">
+              {% if backend == 'transformer' %}win prob + home/away scores{% else %}win probability{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-16 flex gap-8" style="flex-wrap: wrap;">
+          {% if transformer_summary and transformer_summary.cv_summary %}
+            {% set mean_acc = (transformer_summary.cv_summary | map(attribute='acc') | sum) / (transformer_summary.cv_summary | length) %}
+            <span class="pill pill-violet"><strong class="mono">{{ "%.1f"|format(mean_acc * 100) }}%</strong> mean CV acc</span>
+          {% endif %}
+          <span class="pill pill-accent">Live · ready</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KPI strip -->
+<section class="section-tight">
+  <div class="container">
+    <div class="kpi-grid stagger">
+      <div class="kpi">
+        <div class="kpi-label">Games today</div>
+        <div class="kpi-value">{{ kpis.games_today }}</div>
+        <div class="kpi-foot">via ESPN scoreboard</div>
+      </div>
+      <div class="kpi lime">
+        <div class="kpi-label">Edge bets</div>
+        <div class="kpi-value">{{ kpis.best_bets }}</div>
+        <div class="kpi-foot">model &gt; market by 4%+</div>
+      </div>
+      <div class="kpi amber">
+        <div class="kpi-label">Biggest edge</div>
+        <div class="kpi-value">
+          {% if kpis.biggest_edge > 0 %}+{{ "%.1f"|format(kpis.biggest_edge) }}%{% else %}—{% endif %}
+        </div>
+        <div class="kpi-foot">model vs. market</div>
+      </div>
+      <div class="kpi violet">
+        <div class="kpi-label">Teams tracked</div>
+        <div class="kpi-value">{{ kpis.teams_tracked }}</div>
+        <div class="kpi-foot">rolling feature snapshots</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Featured game -->
+{% if featured %}
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Featured matchup</div>
+        <div class="section-sub">{{ 'Highest edge today' if featured.bet else 'Next game on the slate' }}</div>
+      </div>
+      <a href="/upcoming" class="btn btn-ghost btn-sm">All games →</a>
+    </div>
+
+    <div class="card card-glow card-pad-lg">
+      {% if featured.series or featured.is_live %}
+      <div class="flex gap-8 mb-16" style="flex-wrap: wrap;">
+        {% if featured.series %}
+        <span class="pill pill-amber">🏆 {{ featured.series }}</span>
+        {% endif %}
+        {% if featured.is_live %}
+        <span class="pill pill-lime"><span class="glow" style="width:6px;height:6px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px var(--lime-glow);display:inline-block;animation:pulse-soft 1.6s infinite;"></span> LIVE
+          {% if featured.live_score %}· {{ featured.away }} {{ featured.live_score.away }} – {{ featured.live_score.home }} {{ featured.home }}{% endif %}
+        </span>
+        {% endif %}
+      </div>
+      {% endif %}
+      <div class="grid-2" style="grid-template-columns: 1.4fr 1fr; gap: 28px; align-items: center;">
+        <div>
+          <!-- Teams matchup -->
+          <div class="game-teams mb-16">
+            <div class="game-team">
+              <img class="game-team-logo" src="{{ featured.away_logo }}" alt="{{ featured.away_name }}">
+              <div class="game-team-info">
+                <div class="game-team-name">{{ featured.away_name }}</div>
+                <a class="text-xs text-muted" href="/team/{{ featured.away }}">{{ featured.away }} · away · view team →</a>
+              </div>
+            </div>
+            <div class="game-vs">
+              <div class="vs-mark">@</div>
+              <div class="text-xs">{{ featured.time }}</div>
+            </div>
+            <div class="game-team right">
+              <img class="game-team-logo" src="{{ featured.home_logo }}" alt="{{ featured.home_name }}">
+              <div class="game-team-info">
+                <div class="game-team-name">{{ featured.home_name }}</div>
+                <a class="text-xs text-muted" href="/team/{{ featured.home }}">{{ featured.home }} · home · view team →</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Probability bars -->
+          <div class="flex-col gap-8 mb-16">
+            <div class="prob-row">
+              <span class="prob-row-label">Model</span>
+              <div class="prob-bar">
+                <div class="seg seg-l" data-width="{{ featured.prob_away }}">{{ featured.prob_away }}%</div>
+                <div class="seg seg-r">{{ featured.prob_home }}%</div>
+              </div>
+            </div>
+            {% if featured.mkt_home and featured.mkt_away %}
+            <div class="prob-row">
+              <span class="prob-row-label">Market</span>
+              <div class="prob-bar market">
+                <div class="seg seg-l" data-width="{{ featured.mkt_away }}">{{ featured.mkt_away }}%</div>
+                <div class="seg seg-r">{{ featured.mkt_home }}%</div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Score prediction (transformer only) -->
+          {% if featured.score_pred %}
+          <div class="flex gap-8" style="flex-wrap: wrap; margin-bottom: 12px;">
+            <span class="score-pred"><span class="label">Pred. score</span> {{ featured.away }} {{ featured.score_pred.away_score }} – {{ featured.score_pred.home_score }} {{ featured.home }}</span>
+            <span class="score-pred"><span class="label">Spread</span> {{ '+' if featured.score_pred.spread > 0 else '' }}{{ featured.score_pred.spread }}</span>
+            <span class="score-pred"><span class="label">Total</span> {{ featured.score_pred.total }}</span>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Bet panel -->
+        <div>
+          {% if featured.bet %}
+          <div class="card card-pad" style="
+                background: {{ 'var(--lime-soft)' if featured.bet.color == 'green' else
+                              ('var(--amber-soft)' if featured.bet.color == 'amber' else 'var(--accent-soft)') }};
+                border: 1px solid {{ 'rgba(92,242,160,0.4)' if featured.bet.color == 'green' else
+                              ('rgba(255,181,71,0.4)' if featured.bet.color == 'amber' else 'rgba(91,141,255,0.4)') }};">
+            <div class="text-xs uppercase fw-700"
+                 style="color: {{ 'var(--lime)' if featured.bet.color == 'green' else ('var(--amber)' if featured.bet.color == 'amber' else 'var(--accent)') }};">
+              {{ featured.bet.label }}
+            </div>
+            <div class="text-xl fw-800 mt-4" style="font-feature-settings: 'tnum';">
+              {% if featured.bet.edge >= 0 %}+{% endif %}{{ featured.bet.edge }}% edge
+            </div>
+            <div class="text-sm text-muted mt-4">
+              on <strong style="color: var(--text);">{{ team_info[featured.bet_team].name }}</strong>
+              {% if featured.bet.units > 0 %} · {{ featured.bet.units }} unit{{ 's' if featured.bet.units != 1 else '' }} recommended{% endif %}
+            </div>
+            {% if featured.mkt_home_odds and featured.mkt_away_odds %}
+            <div class="text-xs text-dim mono mt-8">Market: {{ featured.away }} {{ featured.mkt_away_odds }} · {{ featured.home }} {{ featured.mkt_home_odds }}</div>
+            {% endif %}
+          </div>
+          {% else %}
+          <div class="card card-pad" style="background: var(--surface-2);">
+            <div class="text-xs uppercase fw-700 text-muted">Model-only · no live market</div>
+            <div class="text-xl fw-800 mt-4">
+              {% if featured.prob_home > featured.prob_away %}{{ featured.home }}{% else %}{{ featured.away }}{% endif %}
+              <span class="text-muted text-sm fw-500">predicted</span>
+            </div>
+            <div class="text-sm text-muted mt-8">
+              Run <code class="mono" style="background: var(--surface-3); padding: 2px 6px; border-radius: 4px;">unify_live_feed.py</code> to enable edge analysis.
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Team form lines -->
+          <div class="flex-col gap-8 mt-16">
+            <div class="stat-line">
+              <strong>{{ featured.away }}</strong>
+              <span class="pill pill-mono">{{ featured.away_stats.elo }} elo</span>
+              <span class="pill pill-mono">NR {{ '+' if featured.away_stats.net_rating > 0 else '' }}{{ featured.away_stats.net_rating }}</span>
+              {% if featured.away_stats.form %}
+              <span class="form-dots">
+                {% for r in featured.away_stats.form %}<span class="form-dot {{ r|lower }}"></span>{% endfor %}
+              </span>
+              {% endif %}
+            </div>
+            <div class="stat-line">
+              <strong>{{ featured.home }}</strong>
+              <span class="pill pill-mono">{{ featured.home_stats.elo }} elo</span>
+              <span class="pill pill-mono">NR {{ '+' if featured.home_stats.net_rating > 0 else '' }}{{ featured.home_stats.net_rating }}</span>
+              {% if featured.home_stats.form %}
+              <span class="form-dots">
+                {% for r in featured.home_stats.form %}<span class="form-dot {{ r|lower }}"></span>{% endfor %}
+              </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Today's slate -->
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Today's slate</div>
+        <div class="section-sub">{{ predictions|length }} game{{ 's' if predictions|length != 1 else '' }} · updated {{ last_updated }}</div>
+      </div>
+      <a href="/upcoming" class="btn btn-secondary btn-sm">Open dashboard →</a>
+    </div>
+
+    {% if predictions %}
+    <div class="games-grid stagger">
+      {% for game in predictions[:6] %}
+      <a class="game-card card-hover" href="/predict" style="text-decoration: none; color: inherit; cursor: pointer;"
+         data-edge="{{ 'strong' if game.bet and game.bet.color == 'green' else '' }}">
+
+        {% if game.bet and game.bet.color in ('green','amber') %}
+        <div class="game-banner {{ 'lime' if game.bet.color == 'green' else 'amber' }}">
+          <span>{{ game.bet.label }} · {{ '+' if game.bet.edge >= 0 else '' }}{{ game.bet.edge }}% on {{ game.bet_team }}</span>
+          <span class="game-banner-meta">{{ game.time }}</span>
+        </div>
+        {% elif game.series %}
+        <div class="game-banner amber">
+          <span>🏆 {{ game.series }}</span>
+          <span class="game-banner-meta">{{ game.time }}</span>
+        </div>
+        {% endif %}
+
+        <div class="game-body">
+          <div class="game-teams">
+            <div class="game-team">
+              <img class="game-team-logo" src="{{ game.away_logo }}" alt="{{ game.away_name }}">
+              <div class="game-team-info">
+                <div class="game-team-name">{{ game.away_name.split()[-1] }}</div>
+                <div class="game-team-sub">{{ game.away }} · away</div>
+              </div>
+            </div>
+            <div class="game-vs"><div class="vs-mark">@</div></div>
+            <div class="game-team right">
+              <div class="game-team-info">
+                <div class="game-team-name">{{ game.home_name.split()[-1] }}</div>
+                <div class="game-team-sub">{{ game.home }} · home</div>
+              </div>
+              <img class="game-team-logo" src="{{ game.home_logo }}" alt="{{ game.home_name }}">
+            </div>
+          </div>
+
+          <div class="prob-row">
+            <span class="prob-row-label">Win</span>
+            <div class="prob-bar">
+              <div class="seg seg-l" data-width="{{ game.prob_away }}">{{ game.prob_away }}%</div>
+              <div class="seg seg-r">{{ game.prob_home }}%</div>
+            </div>
+          </div>
+
+          {% if game.score_pred %}
+          <div class="text-xs mono text-violet">
+            {{ game.away }} {{ game.score_pred.away_score }} – {{ game.score_pred.home_score }} {{ game.home }}
+            · spread {{ '+' if game.score_pred.spread > 0 else '' }}{{ game.score_pred.spread }}
+          </div>
+          {% elif game.bet %}
+          <div class="text-xs text-muted">
+            Market: {{ game.away }} {{ game.mkt_away_odds or '—' }} · {{ game.home }} {{ game.mkt_home_odds or '—' }}
+          </div>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty">
+      <h3>No games on the slate today</h3>
+      <p>Use the manual matchup builder or check back closer to tip-off.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- Capabilities row -->
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Under the hood</div>
+        <div class="section-sub">The signal mix powering both backends.</div>
+      </div>
+    </div>
+
+    <div class="grid-3 stagger">
+      <div class="card card-pad-lg card-hover">
+        <div class="card-title"><span class="swatch" style="background: var(--accent);"></span> Elo Engine</div>
+        <p class="text-sm text-muted" style="line-height: 1.6;">
+          FiveThirtyEight-style ratings: K=20 update factor, +100 home court advantage, margin-of-victory multiplier with diminishing returns, season-boundary regression toward the league mean.
+        </p>
+      </div>
+      <div class="card card-pad-lg card-hover">
+        <div class="card-title"><span class="swatch" style="background: var(--lime);"></span> Four Factors</div>
+        <p class="text-sm text-muted" style="line-height: 1.6;">
+          Dean Oliver's framework: effective FG%, turnover rate, offensive rebound rate, free-throw rate. Both offensive and defensive sides — captures forced-TOV and rebound-prevention quality.
+        </p>
+      </div>
+      <div class="card card-pad-lg card-hover">
+        <div class="card-title"><span class="swatch" style="background: var(--violet);"></span> Sequence Encoder</div>
+        <p class="text-sm text-muted" style="line-height: 1.6;">
+          Two-tower Transformer with shared weights ingests each team's last 20 games. Pre-norm encoder, [CLS] pooling, multi-task win + score head. The natural backbone for the upcoming diffusion outcome model.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

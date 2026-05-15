@@ -36,6 +36,9 @@ Thumbs.db
 # Project specific
 data/live_probs.jsonl
 *.pkl
+models/cache/
+.playwright-mcp/
+.claude/
 git_status.txt
 git_diff.txt
 check_git.py

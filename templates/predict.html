@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Manual Matchup · NBA Predictor{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container" style="max-width: 880px;">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Manual matchup</div>
+        <div class="section-sub">Pick any two teams. The active backend is <strong class="{{ 'text-violet' if backend == 'transformer' else 'text-accent' }}">{{ 'Transformer v3' if backend == 'transformer' else 'GBM v2' }}</strong> — switch from the top-right toggle.</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="grid-template-columns: 1.3fr 1fr; gap: 24px; align-items: stretch;">
+
+      <!-- Form card -->
+      <div class="card card-glow card-pad-lg fade-up">
+        <form action="/predict" method="post" id="match-form">
+
+          <div class="input-group">
+            <div class="leading"><img id="away-logo" src="" style="display: none;"></div>
+            <div class="field">
+              <span class="label">Away team</span>
+              <select name="away_team" id="away_team" required onchange="updateLogo('away')">
+                <option value="">Select a team…</option>
+                {% for abbr, info in team_info.items()|sort(attribute='1.name') %}
+                <option value="{{ abbr }}">{{ info.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="matchup-divider">@ Home Court</div>
+
+          <div class="input-group">
+            <div class="leading"><img id="home-logo" src="" style="display: none;"></div>
+            <div class="field">
+              <span class="label">Home team</span>
+              <select name="home_team" id="home_team" required onchange="updateLogo('home')">
+                <option value="">Select a team…</option>
+                {% for abbr, info in team_info.items()|sort(attribute='1.name') %}
+                <option value="{{ abbr }}">{{ info.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-lg mt-16">
+            Run prediction
+          </button>
+
+          <div class="text-xs text-muted mt-12 center">
+            Predictions use each team's most recent rolling-feature snapshot ·
+            <a href="/upcoming" class="text-accent">use today's games</a> instead for live matchups
+          </div>
+        </form>
+      </div>
+
+      <!-- Side panel: what you'll see -->
+      <div class="card card-pad-lg fade-up" style="animation-delay: .08s;">
+        <div class="card-title"><span class="swatch" style="background: var(--accent);"></span> What you'll get</div>
+        <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 12px; font-size: 0.9rem;">
+          <li class="flex gap-10" style="align-items: flex-start;">
+            <span style="color: var(--accent); font-weight: 700; flex-shrink: 0;">01</span>
+            <div>
+              <strong>Win probability</strong>
+              <div class="text-xs text-muted">Sigmoid output from the active model, calibrated on walk-forward CV.</div>
+            </div>
+          </li>
+          {% if backend == 'transformer' %}
+          <li class="flex gap-10" style="align-items: flex-start;">
+            <span style="color: var(--violet); font-weight: 700; flex-shrink: 0;">02</span>
+            <div>
+              <strong>Predicted score</strong>
+              <div class="text-xs text-muted">Auxiliary regression head outputs final home / away points — gives you spread and total for free.</div>
+            </div>
+          </li>
+          {% endif %}
+          <li class="flex gap-10" style="align-items: flex-start;">
+            <span style="color: var(--lime); font-weight: 700; flex-shrink: 0;">{% if backend == 'transformer' %}03{% else %}02{% endif %}</span>
+            <div>
+              <strong>Side-by-side stat compare</strong>
+              <div class="text-xs text-muted">Elo, Net Rating, eFG%, TOV%, OREB%, streak, rest — the inputs the model is actually weighting.</div>
+            </div>
+          </li>
+          <li class="flex gap-10" style="align-items: flex-start;">
+            <span style="color: var(--amber); font-weight: 700; flex-shrink: 0;">{% if backend == 'transformer' %}04{% else %}03{% endif %}</span>
+            <div>
+              <strong>Confidence band</strong>
+              <div class="text-xs text-muted">High / Medium / Toss-up label so you don't bet anything tighter than 51–49.</div>
+            </div>
+          </li>
+        </ul>
+
+        <div class="mt-24 flex gap-8" style="flex-wrap: wrap;">
+          <span class="pill {{ 'pill-violet' if backend == 'transformer' else 'pill-accent' }}">
+            Backend · {{ 'Transformer v3' if backend == 'transformer' else 'GBM v2' }}
+          </span>
+          <span class="pill">10 seasons of training data</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  function updateLogo(side) {
+    const sel = document.getElementById(side + '_team');
+    const img = document.getElementById(side + '-logo');
+    const v = sel.value;
+    if (v && window.TEAM_INFO[v]) {
+      img.src = window.TEAM_INFO[v].logo;
+      img.style.display = 'block';
+    } else {
+      img.style.display = 'none';
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,94 @@
+{
+  "cv_summary": [
+    {
+      "test_season": 2021,
+      "acc": 0.6623470122390209,
+      "logloss": 0.633497565132723,
+      "auc": 0.6871729066022545,
+      "brier": 0.2211276888847351,
+      "home_rate": 0.5529157667386609,
+      "n_test": 1389
+    },
+    {
+      "test_season": 2022,
+      "acc": 0.6231046931407942,
+      "logloss": 0.6469683860407046,
+      "auc": 0.6526638951071315,
+      "brier": 0.2275751531124115,
+      "home_rate": 0.5740072202166066,
+      "n_test": 1385
+    },
+    {
+      "test_season": 2023,
+      "acc": 0.6446043165467625,
+      "logloss": 0.618956765577871,
+      "auc": 0.7088157894736843,
+      "brier": 0.21512749791145325,
+      "home_rate": 0.5467625899280576,
+      "n_test": 1390
+    },
+    {
+      "test_season": 2024,
+      "acc": 0.6495293265749457,
+      "logloss": 0.6213414521479247,
+      "auc": 0.7054616990729171,
+      "brier": 0.2163645625114441,
+      "home_rate": 0.5488776249094859,
+      "n_test": 1381
+    }
+  ],
+  "final_eval_season": 2024,
+  "final_metrics": {
+    "logloss": 0.6213414521479247,
+    "acc": 0.6495293265749457,
+    "auc": 0.7054616990729171,
+    "brier": 0.2163645625114441,
+    "home_rate": 0.5488776249094859
+  },
+  "n_params": 619779,
+  "config": {
+    "n_token_features": 22,
+    "n_ctx_features": 8,
+    "seq_len": 20,
+    "d_model": 128,
+    "n_heads": 4,
+    "n_layers": 4,
+    "d_ff": 256,
+    "dropout": 0.1,
+    "head_hidden": 128,
+    "token_features": [
+      "IS_HOME",
+      "WIN",
+      "B2B",
+      "MARGIN",
+      "PTS",
+      "OPP_PTS",
+      "EFG_PCT",
+      "OPP_EFG_PCT",
+      "TOV_PCT",
+      "OPP_TOV_PCT",
+      "OREB_PCT",
+      "OPP_OREB_PCT",
+      "FTR",
+      "OPP_FTR",
+      "TS_PCT",
+      "THREE_PAR",
+      "AST_TOV",
+      "NET_RATING",
+      "PACE",
+      "DAYS_REST",
+      "TEAM_ELO_PRE",
+      "OPP_ELO_PRE"
+    ],
+    "context_features": [
+      "HOME_ELO",
+      "AWAY_ELO",
+      "ELO_DIFF",
+      "HOME_DAYS_REST",
+      "AWAY_DAYS_REST",
+      "REST_DIFF",
+      "HOME_B2B",
+      "AWAY_B2B"
+    ]
+  }
+}

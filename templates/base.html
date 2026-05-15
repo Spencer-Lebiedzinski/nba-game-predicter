@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}NBA Predictor{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v={{ asset_v_css }}">
+  <link rel="icon" href="{{ url_for('static', filename='img/logo.png') }}" type="image/png">
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+
+<!-- Top navigation -->
+<nav class="nav">
+  <a href="/" class="nav-brand">
+    <div class="nav-brand-mark">N</div>
+    <div class="nav-brand-text">
+      <span>NBA Predictor</span>
+      <span class="micro">v3 · ml engine</span>
+    </div>
+  </a>
+  <div class="nav-tabs">
+    <a href="/" class="nav-tab {{ 'active' if active_tab == 'dashboard' }}"><span class="dot"></span><span>Dashboard</span></a>
+    <a href="/upcoming" class="nav-tab {{ 'active' if active_tab == 'upcoming' }}"><span class="dot"></span><span>Upcoming</span></a>
+    <a href="/predict" class="nav-tab {{ 'active' if active_tab == 'predict' }}"><span class="dot"></span><span>Predict</span></a>
+    <a href="/models" class="nav-tab {{ 'active' if active_tab == 'models' }}"><span class="dot"></span><span>Models</span></a>
+  </div>
+  <div class="nav-spacer"></div>
+  <div class="nav-actions">
+    <button type="button" class="cmd-trigger" onclick="window.app && window.app.openCmdK()">
+      <span>Search teams, jump anywhere</span>
+      <span class="kbd">⌘K</span>
+    </button>
+    {% if transformer_available %}
+    <button type="button"
+            class="backend-switch"
+            data-active="{{ backend }}"
+            title="Click to switch prediction model"
+            onclick="window.app && window.app.toggleBackend()">
+      <span class="indicator"></span>
+      {% if backend == 'transformer' %}Transformer{% else %}GBM{% endif %}
+    </button>
+    {% else %}
+    <span class="backend-switch" data-active="gbm" title="Transformer artifacts not yet built — using GBM">
+      <span class="indicator"></span>GBM
+    </span>
+    {% endif %}
+  </div>
+</nav>
+
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="footer container">
+  <div class="footer-row">
+    <div>
+      <strong style="color: var(--text);">NBA Predictor</strong> ·
+      Trained on 10 seasons (2015-25) · ~13,700 games ·
+      <a href="/models">Model metrics →</a>
+    </div>
+    <div>Not financial advice · Built with PyTorch + XGBoost + Flask</div>
+  </div>
+</footer>
+
+<!-- Command palette modal -->
+<div class="cmdk-overlay" id="cmdk-overlay" onclick="if(event.target===this) window.app.closeCmdK()">
+  <div class="cmdk">
+    <div class="cmdk-input-wrap">
+      <span style="color: var(--text-muted);">⌕</span>
+      <input id="cmdk-input" placeholder="Type a team, 'BOS vs LAL', or a command..." autocomplete="off">
+      <span class="kbd">esc</span>
+    </div>
+    <div class="cmdk-list" id="cmdk-list"></div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+  window.TEAM_INFO = {{ team_info|tojson if team_info else '{}'|safe }};
+  window.BACKEND   = "{{ backend }}";
+  window.TRANSFORMER_AVAILABLE = {{ 'true' if transformer_available else 'false' }};
+</script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v={{ asset_v_js }}"></script>
+{% block scripts %}{% endblock %}
+
+</body>
+</html>

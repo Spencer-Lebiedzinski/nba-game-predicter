@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} · NBA Predictor{% endblock %}
+
+{% block content %}
+<section class="hero" style="padding: 36px 0 24px;">
+  <div class="container">
+    <div class="flex gap-12 mb-12">
+      <a href="/" class="btn btn-ghost btn-sm">← Dashboard</a>
+      <a href="/upcoming" class="btn btn-ghost btn-sm">Today's slate</a>
+    </div>
+
+    <div class="flex gap-24" style="align-items: center; flex-wrap: wrap;">
+      <img src="{{ logo }}" alt="{{ name }}" style="width: 110px; height: 110px; object-fit: contain; filter: drop-shadow(0 8px 24px rgba(0,0,0,0.6));">
+      <div>
+        <div class="text-xs text-muted uppercase fw-700 mb-4">{{ abbr }}</div>
+        <h1 class="hero-title" style="font-size: 2.4rem; margin-bottom: 6px;">
+          {{ name }}
+        </h1>
+        <div class="flex gap-8" style="flex-wrap: wrap;">
+          <span class="pill pill-accent">{{ headline.elo }} Elo</span>
+          <span class="pill pill-mono">
+            NR {% if headline.net_rating_l10 > 0 %}+{% endif %}{{ headline.net_rating_l10 }}
+          </span>
+          <span class="pill pill-mono">{{ headline.win_rate_l10 }}% L10</span>
+          {% if headline.streak != 0 %}
+          <span class="pill {{ 'pill-lime' if headline.streak > 0 else 'pill-red' }}">
+            {% if headline.streak > 0 %}+{% endif %}{{ headline.streak }} streak
+          </span>
+          {% endif %}
+          {% if headline.b2b %}
+          <span class="pill pill-amber">B2B tonight</span>
+          {% else %}
+          <span class="pill pill-mono">{{ headline.rest }}d rest</span>
+          {% endif %}
+          {% if headline.last_game_date %}
+          <span class="pill pill-mono">last game {{ headline.last_game_date }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KPI strip per team -->
+<section class="section-tight">
+  <div class="container">
+    <div class="kpi-grid stagger">
+      <div class="kpi">
+        <div class="kpi-label">eFG%</div>
+        <div class="kpi-value">{{ headline.efg_pct_l10 }}%</div>
+        <div class="kpi-foot">last 10 games · effective FG</div>
+      </div>
+      <div class="kpi violet">
+        <div class="kpi-label">TOV%</div>
+        <div class="kpi-value">{{ headline.tov_pct_l10 }}%</div>
+        <div class="kpi-foot">turnover rate · lower is better</div>
+      </div>
+      <div class="kpi lime">
+        <div class="kpi-label">OREB%</div>
+        <div class="kpi-value">{{ headline.oreb_pct_l10 }}%</div>
+        <div class="kpi-foot">offensive rebound rate</div>
+      </div>
+      <div class="kpi amber">
+        <div class="kpi-label">Pace</div>
+        <div class="kpi-value">{{ headline.pace_l10 }}</div>
+        <div class="kpi-foot">possessions per game</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Sparklines -->
+{% if history %}
+<section class="section">
+  <div class="container">
+    <div class="grid-3 stagger">
+      <div class="card card-pad-lg">
+        <div class="card-title"><span class="swatch" style="background: var(--accent);"></span> Points scored (last {{ history|length }})</div>
+        <div data-sparkline="{{ pts_spark }}" data-trend="auto" style="height: 60px; width: 100%; color: var(--accent);"></div>
+        <div class="text-xs text-muted mt-8 mono">most recent: {{ history[-1].pts|int }} pts</div>
+      </div>
+      <div class="card card-pad-lg">
+        <div class="card-title"><span class="swatch" style="background: var(--lime);"></span> Margin</div>
+        <div data-sparkline="{{ margin_spark }}" data-trend="auto" style="height: 60px; width: 100%; color: var(--lime);"></div>
+        <div class="text-xs text-muted mt-8 mono">
+          most recent: {% if history[-1].margin > 0 %}+{% endif %}{{ history[-1].margin|int }}
+        </div>
+      </div>
+      <div class="card card-pad-lg">
+        <div class="card-title"><span class="swatch" style="background: var(--violet);"></span> Net rating</div>
+        <div data-sparkline="{{ netrtg_spark }}" data-trend="auto" style="height: 60px; width: 100%; color: var(--violet);"></div>
+        <div class="text-xs text-muted mt-8 mono">
+          most recent: {% if history[-1].net_rating > 0 %}+{% endif %}{{ "%.1f"|format(history[-1].net_rating) }}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Home / road split -->
+<section class="section">
+  <div class="container">
+    <div class="grid-2 stagger">
+      <div class="card card-pad-lg">
+        <div class="card-title"><span class="swatch" style="background: var(--accent);"></span> At home · L15</div>
+        <div class="flex" style="align-items: baseline; gap: 8px;">
+          <div class="kpi-value text-accent" style="font-size: 2.2rem;">{{ headline.home_win_rate }}%</div>
+          <div class="text-sm text-muted">win rate at home</div>
+        </div>
+        <div class="text-xs text-muted mt-12">
+          Rolling 15-home-game window. Captures venue effects that are missed by overall L10.
+        </div>
+      </div>
+      <div class="card card-pad-lg">
+        <div class="card-title"><span class="swatch" style="background: var(--violet);"></span> On the road · L15</div>
+        <div class="flex" style="align-items: baseline; gap: 8px;">
+          <div class="kpi-value text-violet" style="font-size: 2.2rem;">{{ headline.road_win_rate }}%</div>
+          <div class="text-sm text-muted">win rate on the road</div>
+        </div>
+        <div class="text-xs text-muted mt-12">
+          Some teams are dramatically different home vs road. The model uses these splits when predicting matchups.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Last games table -->
+{% if history %}
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Last {{ history|length }} games</div>
+        <div class="section-sub">Captured by the Transformer's sequence window · most recent at the bottom.</div>
+      </div>
+    </div>
+    <div class="card" style="overflow: hidden;">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Result</th>
+            <th class="num">Score</th>
+            <th class="num">Margin</th>
+            <th class="num">Net rating</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for h in history %}
+          <tr class="{{ 'hi' if loop.last else '' }}">
+            <td class="text-muted mono">{{ loop.index }}</td>
+            <td>
+              {% if h.win %}
+              <span class="pill pill-lime">W</span>
+              {% else %}
+              <span class="pill pill-red">L</span>
+              {% endif %}
+            </td>
+            <td class="num">{{ h.pts|int }} – {{ h.opp_pts|int }}</td>
+            <td class="num {{ 'text-lime' if h.margin > 0 else 'text-red' }}">
+              {% if h.margin > 0 %}+{% endif %}{{ h.margin|int }}
+            </td>
+            <td class="num {{ 'text-lime' if h.net_rating > 0 else 'text-red' }}">
+              {% if h.net_rating > 0 %}+{% endif %}{{ "%.1f"|format(h.net_rating) }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% else %}
+<section class="section">
+  <div class="container">
+    <div class="empty">
+      <h3>No detailed history available</h3>
+      <p>The Transformer's <code>team_sequences.pkl</code> hasn't been built yet. Run <code>python models/train_transformer.py</code> to populate the last-20-game sequences for each team.</p>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}Models · NBA Predictor{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Models &amp; metrics</div>
+        <div class="section-sub">Two backends are loaded side-by-side. Toggle from the top-right to make either one the active prediction engine.</div>
+      </div>
+    </div>
+
+    <div class="grid-2 stagger">
+      <!-- GBM card -->
+      <div class="card card-glow card-pad-lg">
+        <div class="flex" style="justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px;">
+          <div>
+            <div class="text-xs text-muted uppercase fw-700">v2 production</div>
+            <h2 style="font-size: 1.4rem; margin-top: 2px; letter-spacing: -0.4px;">{{ gbm_card.name }}</h2>
+            <div class="text-sm text-muted mt-4">{{ gbm_card.algorithm }}</div>
+          </div>
+          <span class="pill {{ 'pill-accent' if backend == 'gbm' else '' }}">
+            {{ 'Active' if backend == 'gbm' else 'Standby' }}
+          </span>
+        </div>
+
+        <div class="grid-3" style="gap: 10px; margin-bottom: 16px;">
+          <div class="card card-pad-sm" style="background: var(--surface-2);">
+            <div class="text-xs text-muted uppercase fw-700">Features</div>
+            <div class="text-xl fw-800 mono">{{ gbm_card.features }}</div>
+          </div>
+          <div class="card card-pad-sm" style="background: var(--surface-2);">
+            <div class="text-xs text-muted uppercase fw-700">Training games</div>
+            <div class="text-xl fw-800 mono">{{ gbm_card.training_games }}</div>
+          </div>
+          <div class="card card-pad-sm" style="background: var(--surface-2);">
+            <div class="text-xs text-muted uppercase fw-700">Target acc</div>
+            <div class="text-xl fw-800 mono text-accent">{{ gbm_card.target_acc }}</div>
+          </div>
+        </div>
+
+        <div class="card-title"><span class="swatch" style="background: var(--accent);"></span> Signal mix</div>
+        <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+          {% for h in gbm_card.highlights %}
+          <li class="flex gap-8" style="align-items: flex-start;">
+            <span style="color: var(--accent); flex-shrink: 0;">▸</span>
+            <span class="text-sm">{{ h }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- Transformer card -->
+      <div class="card {{ 'card-violet' if tx_card else '' }} card-pad-lg">
+        <div class="flex" style="justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px;">
+          <div>
+            <div class="text-xs text-muted uppercase fw-700">v3 sequence model</div>
+            <h2 style="font-size: 1.4rem; margin-top: 2px; letter-spacing: -0.4px;">
+              {% if tx_card %}{{ tx_card.name }}{% else %}Transformer (v3){% endif %}
+            </h2>
+            <div class="text-sm text-muted mt-4">
+              {% if tx_card %}{{ tx_card.algorithm }}{% else %}Two-tower shared-weight encoder · PyTorch{% endif %}
+            </div>
+          </div>
+          {% if tx_card %}
+          <span class="pill {{ 'pill-violet' if backend == 'transformer' else '' }}">
+            {{ 'Active' if backend == 'transformer' else 'Standby' }}
+          </span>
+          {% else %}
+          <span class="pill pill-amber">Training pending</span>
+          {% endif %}
+        </div>
+
+        {% if tx_card and tx_card.params %}
+        <div class="grid-3" style="gap: 10px; margin-bottom: 16px;">
+          <div class="card card-pad-sm" style="background: var(--surface-2);">
+            <div class="text-xs text-muted uppercase fw-700">Parameters</div>
+            <div class="text-xl fw-800 mono">{{ "{:,}".format(tx_card.params) }}</div>
+          </div>
+          {% if tx_card.seq_len %}
+          <div class="card card-pad-sm" style="background: var(--surface-2);">
+            <div class="text-xs text-muted uppercase fw-700">Seq length</div>
+            <div class="text-xl fw-800 mono">{{ tx_card.seq_len }}</div>
+          </div>
+          {% endif %}
+          {% if tx_card.d_model %}
+          <div class="card card-pad-sm" style="background: var(--surface-2);">
+            <div class="text-xs text-muted uppercase fw-700">d_model</div>
+            <div class="text-xl fw-800 mono text-violet">{{ tx_card.d_model }}</div>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        {% if tx_card %}
+        <div class="card-title"><span class="swatch" style="background: var(--violet);"></span> Architecture</div>
+        <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+          <li class="flex gap-8"><span class="text-violet">▸</span><span class="text-sm">Two-tower with shared weights — same encoder runs over home + away sequences</span></li>
+          <li class="flex gap-8"><span class="text-violet">▸</span><span class="text-sm">Pre-norm Transformer blocks · {% if tx_card.n_layers %}{{ tx_card.n_layers }} layers, {{ tx_card.n_heads }} heads{% endif %}</span></li>
+          <li class="flex gap-8"><span class="text-violet">▸</span><span class="text-sm">Learned <code>[CLS]</code> token + learned positional embedding</span></li>
+          <li class="flex gap-8"><span class="text-violet">▸</span><span class="text-sm">Multi-task head: <code>BCE(win) + 0.01·MSE(home_score) + 0.01·MSE(away_score)</code></span></li>
+          <li class="flex gap-8"><span class="text-violet">▸</span><span class="text-sm">Game-context vector: Elo, rest-day diff, B2B flags fused after pooling</span></li>
+        </ul>
+        {% else %}
+        <div class="empty" style="padding: 24px;">
+          <h3 style="color: var(--text); font-size: 1rem;">Transformer not yet trained</h3>
+          <p>Run <code class="mono" style="background: var(--surface-2); padding: 2px 6px; border-radius: 4px;">python models/train_transformer.py</code> to produce the v3 artifacts. The backend toggle will activate once <code>transformer_model.pt</code> appears.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Walk-forward CV table -->
+    {% if tx_card and tx_card.cv_summary %}
+    <div class="section-header" style="margin-top: 32px;">
+      <div>
+        <div class="section-title">Walk-forward cross-validation</div>
+        <div class="section-sub">Each season is held out in turn; the model only ever sees prior data — mirrors deployment exactly.</div>
+      </div>
+    </div>
+
+    <div class="card" style="overflow: hidden;">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Test season</th>
+            <th class="num">Accuracy</th>
+            <th class="num">LogLoss</th>
+            <th class="num">AUC</th>
+            <th class="num">Brier</th>
+            <th class="num">N</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in tx_card.cv_summary %}
+          <tr>
+            <td class="mono">{{ r.test_season }}-{{ '%02d' % ((r.test_season + 1) % 100) }}</td>
+            <td class="num"><strong>{{ "%.1f"|format(r.acc * 100) }}%</strong></td>
+            <td class="num">{{ "%.4f"|format(r.logloss) }}</td>
+            <td class="num">{{ "%.3f"|format(r.auc) }}</td>
+            <td class="num">{{ "%.3f"|format(r.brier) }}</td>
+            <td class="num text-muted">{{ "{:,}".format(r.n_test) }}</td>
+          </tr>
+          {% endfor %}
+          {% set mean_acc = (tx_card.cv_summary | map(attribute='acc') | sum) / (tx_card.cv_summary | length) %}
+          {% set mean_logloss = (tx_card.cv_summary | map(attribute='logloss') | sum) / (tx_card.cv_summary | length) %}
+          <tr class="hi">
+            <td><strong>Mean</strong></td>
+            <td class="num"><strong class="text-violet">{{ "%.1f"|format(mean_acc * 100) }}%</strong></td>
+            <td class="num"><strong>{{ "%.4f"|format(mean_logloss) }}</strong></td>
+            <td class="num">—</td>
+            <td class="num">—</td>
+            <td class="num">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    <!-- Benchmarks vs published numbers -->
+    <div class="section-header" style="margin-top: 32px;">
+      <div>
+        <div class="section-title">Benchmarks</div>
+        <div class="section-sub">Same prediction task, different approaches. Vegas closing lines are the practical ceiling.</div>
+      </div>
+    </div>
+
+    <div class="card" style="overflow: hidden;">
+      <table class="tbl">
+        <thead>
+          <tr><th>System</th><th class="num">Accuracy</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Naive · always pick home</td>
+            <td class="num text-muted">~59%</td>
+            <td class="text-muted">Baseline · home win rate</td>
+          </tr>
+          <tr>
+            <td>v1 · Logistic Regression (12 features)</td>
+            <td class="num text-muted">~60.2%</td>
+            <td class="text-muted">Linear model · pre-rebuild</td>
+          </tr>
+          <tr>
+            <td>v2 · {{ gbm_card.name }}</td>
+            <td class="num text-accent fw-700">{{ gbm_card.target_acc }}</td>
+            <td class="text-muted">Tabular Four Factors + Elo + GBM</td>
+          </tr>
+          {% if tx_card and tx_card.cv_summary %}
+          {% set mean_acc2 = (tx_card.cv_summary | map(attribute='acc') | sum) / (tx_card.cv_summary | length) %}
+          <tr class="hi">
+            <td>v3 · {{ tx_card.name }}</td>
+            <td class="num text-violet fw-700">{{ "%.1f"|format(mean_acc2 * 100) }}%</td>
+            <td>Sequence model · walk-forward mean</td>
+          </tr>
+          {% endif %}
+          <tr>
+            <td>FiveThirtyEight · Elo + RAPTOR</td>
+            <td class="num text-muted">~70-72%</td>
+            <td class="text-muted">Industry reference</td>
+          </tr>
+          <tr>
+            <td>Vegas closing lines</td>
+            <td class="num text-muted">~73-75%</td>
+            <td class="text-muted">Practical ceiling</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="text-xs text-muted mt-16">
+      All accuracy numbers above are walk-forward cross-validated where applicable — no in-sample evaluation.
+    </div>
+  </div>
+</section>
+{% endblock %}
